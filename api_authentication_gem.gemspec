@@ -14,11 +14,15 @@ Gem::Specification.new do |s|
   s.license     = "MIT"
   s.required_ruby_version = ">= 2.7.0"
 
-  s.add_dependency "jwt",           ">= 2.0"
-  s.add_dependency "bcrypt",        ">= 3.1"
-  s.add_dependency "activesupport",  ">= 6.0"
-  s.add_dependency "activerecord",   ">= 6.0"
+  s.add_dependency "activerecord", ">= 6.0"
+  s.add_dependency "activesupport", ">= 6.0"
+  s.add_dependency "bcrypt", ">= 3.1"
+  s.add_dependency "jwt", ">= 2.0"
 
-  s.add_development_dependency "rspec",  ">= 3.0"
+  s.add_development_dependency "rspec", ">= 3.0"
+  s.add_development_dependency "rspec_junit_formatter"
+  s.add_development_dependency "rubocop", "~> 1.65"
+  s.add_development_dependency "rubocop-performance", "~> 1.21"
+  s.add_development_dependency "rubocop-rspec", "~> 3.0"
   s.add_development_dependency "sqlite3"
 end

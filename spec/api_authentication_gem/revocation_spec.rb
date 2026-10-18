@@ -8,12 +8,11 @@ RSpec.describe "Token Revocation — ApiAuthenticationGem::Auth.revoke" do
       config.user_class          = "User"
       config.revocation_enabled  = true
     end
+    ApiAuthenticationGem::Auth.signup(email: email, password: password)
   end
 
   let(:email)    { "revoke@example.com" }
   let(:password) { "securepass" }
-
-  before { ApiAuthenticationGem::Auth.signup(email: email, password: password) }
 
   def issue_token
     ApiAuthenticationGem::Auth.login(email: email, password: password)[:token]
@@ -52,7 +51,7 @@ RSpec.describe "Token Revocation — ApiAuthenticationGem::Auth.revoke" do
 
     it "still decodes a non-revoked token normally" do
       t1 = issue_token
-      t2 = issue_token  # separate token, separate jti
+      t2 = issue_token # separate token, separate jti
       ApiAuthenticationGem::Auth.revoke(token: t1)
 
       decoded = ApiAuthenticationGem::Auth.decode(t2)

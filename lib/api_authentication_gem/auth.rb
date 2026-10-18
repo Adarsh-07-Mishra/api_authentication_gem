@@ -33,7 +33,7 @@ module ApiAuthenticationGem
       end
     rescue ConfigurationError
       raise
-    rescue => e
+    rescue StandardError => e
       { error: e.message }
     end
 
@@ -51,9 +51,7 @@ module ApiAuthenticationGem
 
       if config.lockout_enabled
         lockout = Lockout.find_or_initialize_by(identifier: normalized)
-        if lockout.locked?
-          return { error: "Account locked. Try again in #{lockout.minutes_remaining} minute(s)." }
-        end
+        return { error: "Account locked. Try again in #{lockout.minutes_remaining} minute(s)." } if lockout.locked?
       end
 
       user_class = config.user_class.constantize
@@ -84,7 +82,7 @@ module ApiAuthenticationGem
       result
     rescue ConfigurationError
       raise
-    rescue => e
+    rescue StandardError => e
       { error: e.message }
     end
 
@@ -115,7 +113,7 @@ module ApiAuthenticationGem
       new_refresh = generate_refresh_token_record(user.id)
 
       { token: new_access, refresh_token: new_refresh.token, user: user }
-    rescue => e
+    rescue StandardError => e
       { error: e.message }
     end
 
@@ -137,9 +135,7 @@ module ApiAuthenticationGem
       end
 
       # Mirror into session tracker if enabled
-      if config.session_tracking_enabled
-        AuthSession.find_by(jti: decoded["jti"])&.revoke!
-      end
+      AuthSession.find_by(jti: decoded["jti"])&.revoke! if config.session_tracking_enabled
 
       call_hook(:on_logout, decoded["jti"])
       { message: "Token revoked successfully" }
@@ -147,7 +143,7 @@ module ApiAuthenticationGem
       { error: "Cannot revoke an already-expired token" }
     rescue JWT::DecodeError
       { error: "Invalid token" }
-    rescue => e
+    rescue StandardError => e
       { error: e.message }
     end
 
@@ -174,7 +170,7 @@ module ApiAuthenticationGem
       )
 
       base_msg.merge(reset_token: reset.token)
-    rescue => e
+    rescue StandardError => e
       { error: e.message }
     end
 
@@ -204,7 +200,7 @@ module ApiAuthenticationGem
       else
         { error: user.errors.full_messages.join(", ") }
       end
-    rescue => e
+    rescue StandardError => e
       { error: e.message }
     end
 
@@ -239,7 +235,7 @@ module ApiAuthenticationGem
       )
 
       base_msg.merge(magic_token: link.token)
-    rescue => e
+    rescue StandardError => e
       { error: e.message }
     end
 
@@ -269,7 +265,7 @@ module ApiAuthenticationGem
       result[:refresh_token] = generate_refresh_token_record(user.id).token if config.refresh_tokens_enabled
       call_hook(:on_login, user)
       result
-    rescue => e
+    rescue StandardError => e
       { error: e.message }
     end
 
@@ -284,7 +280,7 @@ module ApiAuthenticationGem
         unless ApiAuthenticationGem.configuration.session_tracking_enabled
 
       { sessions: AuthSession.where(user_id: user_id).active.order(created_at: :desc) }
-    rescue => e
+    rescue StandardError => e
       { error: e.message }
     end
 
@@ -304,13 +300,11 @@ module ApiAuthenticationGem
 
       session.revoke!
 
-      if config.revocation_enabled
-        RevokedToken.find_or_create_by!(jti: jti) { |r| r.expires_at = session.expires_at }
-      end
+      RevokedToken.find_or_create_by!(jti: jti) { |r| r.expires_at = session.expires_at } if config.revocation_enabled
 
       call_hook(:on_logout, jti)
       { message: "Session revoked successfully" }
-    rescue => e
+    rescue StandardError => e
       { error: e.message }
     end
 
@@ -328,14 +322,12 @@ module ApiAuthenticationGem
       sessions = AuthSession.where(user_id: user_id).active.to_a
       sessions.each do |s|
         s.revoke!
-        if config.revocation_enabled
-          RevokedToken.find_or_create_by!(jti: s.jti) { |r| r.expires_at = s.expires_at }
-        end
+        RevokedToken.find_or_create_by!(jti: s.jti) { |r| r.expires_at = s.expires_at } if config.revocation_enabled
         call_hook(:on_logout, s.jti)
       end
 
       { message: "#{sessions.count} session(s) revoked" }
-    rescue => e
+    rescue StandardError => e
       { error: e.message }
     end
 
@@ -362,7 +354,7 @@ module ApiAuthenticationGem
     end
 
     # =========================================================================
-    private
+
     # =========================================================================
 
     def self.signing_key
@@ -411,6 +403,7 @@ module ApiAuthenticationGem
 
     def self.token_revoked?(jti)
       return false unless ApiAuthenticationGem.configuration.revocation_enabled
+
       RevokedToken.revoked?(jti)
     end
 
@@ -432,7 +425,7 @@ module ApiAuthenticationGem
     def self.call_hook(hook_name, *args)
       hook = ApiAuthenticationGem.configuration.public_send(hook_name)
       hook.call(*args) if hook.respond_to?(:call)
-    rescue => _e
+    rescue StandardError => _e
       # Hook errors must never interrupt the auth flow
     end
   end

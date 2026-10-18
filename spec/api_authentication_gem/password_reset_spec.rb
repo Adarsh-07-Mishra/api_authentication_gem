@@ -6,15 +6,14 @@ RSpec.describe "Password Reset — ApiAuthenticationGem::Auth password reset flo
     ApiAuthenticationGem.configure do |config|
       config.secret_key            = "test-secret-for-password-reset"
       config.user_class            = "User"
-      config.password_reset_expiry = 15 * 60  # 15 minutes
+      config.password_reset_expiry = 15 * 60 # 15 minutes
       config.min_password_length   = 6
     end
+    ApiAuthenticationGem::Auth.signup(email: email, password: password)
   end
 
   let(:email)    { "reset@example.com" }
   let(:password) { "oldpassword" }
-
-  before { ApiAuthenticationGem::Auth.signup(email: email, password: password) }
 
   # ---------------------------------------------------------------------------
   # request_password_reset

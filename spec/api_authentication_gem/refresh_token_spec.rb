@@ -7,8 +7,9 @@ RSpec.describe "Refresh Token — ApiAuthenticationGem::Auth.refresh" do
       config.secret_key               = "test-secret-for-refresh"
       config.user_class               = "User"
       config.refresh_tokens_enabled   = true
-      config.refresh_token_expiry     = 30 * 24 * 60 * 60  # 30 days
+      config.refresh_token_expiry     = 30 * 24 * 60 * 60 # 30 days
     end
+    ApiAuthenticationGem::Auth.signup(email: email, password: password)
   end
 
   let(:email)    { "refresh@example.com" }
@@ -17,8 +18,6 @@ RSpec.describe "Refresh Token — ApiAuthenticationGem::Auth.refresh" do
   def do_login
     ApiAuthenticationGem::Auth.login(email: email, password: password)
   end
-
-  before { ApiAuthenticationGem::Auth.signup(email: email, password: password) }
 
   # ---------------------------------------------------------------------------
   # login integration
@@ -63,7 +62,7 @@ RSpec.describe "Refresh Token — ApiAuthenticationGem::Auth.refresh" do
     end
 
     it "issues a different access token each time" do
-      login_result   = do_login
+      login_result = do_login
       r1 = ApiAuthenticationGem::Auth.refresh(refresh_token: login_result[:refresh_token])
       r2 = ApiAuthenticationGem::Auth.refresh(refresh_token: r1[:refresh_token])
       expect(r1[:token]).not_to eq(r2[:token])
@@ -151,8 +150,8 @@ RSpec.describe "Refresh Token — ApiAuthenticationGem::Auth.refresh" do
 
     it "#active? returns true for a valid token" do
       rt = ApiAuthenticationGem::RefreshToken.create!(
-        user_id: user.id,
-        token:   "abc123",
+        user_id:    user.id,
+        token:      "abc123",
         expires_at: Time.now + 3600
       )
       expect(rt.active?).to be true

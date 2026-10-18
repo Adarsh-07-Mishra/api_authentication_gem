@@ -71,6 +71,7 @@ module ApiAuthenticationGem
       def extract_bearer_token
         header = request.headers["Authorization"]
         return nil unless header.present?
+
         header.start_with?("Bearer ") ? header.split(" ", 2).last.strip : header.strip
       end
     end

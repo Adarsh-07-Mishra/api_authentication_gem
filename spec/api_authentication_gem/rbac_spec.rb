@@ -83,7 +83,7 @@ RSpec.describe "RBAC — ApiAuthenticationGem::Concerns::Authenticatable#authori
       controller.set_current_user(plain_user)
       controller.authorize_role!(:admin, :moderator)
 
-      expect(controller.rendered_json[:required]).to eq(["admin", "moderator"])
+      expect(controller.rendered_json[:required]).to eq(%w[admin moderator])
       expect(controller.rendered_json[:current]).to eq("user")
     end
 

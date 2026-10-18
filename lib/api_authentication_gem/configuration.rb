@@ -36,7 +36,7 @@ module ApiAuthenticationGem
 
     def initialize
       # Core
-      @secret_key             = ENV["API_AUTH_SECRET_KEY"]
+      @secret_key             = ENV.fetch("API_AUTH_SECRET_KEY", nil)
       @user_class             = "User"
       @email_attribute        = :email
       @password_attribute     = :password
@@ -92,12 +92,8 @@ module ApiAuthenticationGem
         raise ConfigurationError, "algorithm must be 'HS256' or 'RS256' (got '#{algorithm}')."
       end
 
-      if token_expiry.to_i <= 0
-        raise ConfigurationError, "token_expiry must be a positive integer (seconds)."
-      end
-      if min_password_length.to_i <= 0
-        raise ConfigurationError, "min_password_length must be a positive integer."
-      end
+      raise ConfigurationError, "token_expiry must be a positive integer (seconds)." if token_expiry.to_i <= 0
+      raise ConfigurationError, "min_password_length must be a positive integer." if min_password_length.to_i <= 0
       if refresh_tokens_enabled && refresh_token_expiry.to_i <= 0
         raise ConfigurationError, "refresh_token_expiry must be a positive integer (seconds)."
       end

@@ -185,17 +185,17 @@ RSpec.describe "Auth Event Hooks — ApiAuthenticationGem configuration callback
   describe "nil hooks" do
     it "does not raise when on_signup is nil" do
       ApiAuthenticationGem.configuration.on_signup = nil
-      expect {
+      expect do
         ApiAuthenticationGem::Auth.signup(email: email, password: password)
-      }.not_to raise_error
+      end.not_to raise_error
     end
 
     it "does not raise when on_login is nil" do
       ApiAuthenticationGem::Auth.signup(email: email, password: password)
       ApiAuthenticationGem.configuration.on_login = nil
-      expect {
+      expect do
         ApiAuthenticationGem::Auth.login(email: email, password: password)
-      }.not_to raise_error
+      end.not_to raise_error
     end
   end
 end

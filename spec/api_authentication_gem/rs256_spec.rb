@@ -6,6 +6,8 @@ RSpec.describe "RS256 Algorithm — ApiAuthenticationGem asymmetric JWT" do
   let(:rsa_key)     { OpenSSL::PKey::RSA.generate(2048) }
   let(:private_key) { rsa_key }
   let(:public_key)  { rsa_key.public_key }
+  let(:email)    { "rs256@example.com" }
+  let(:password) { "securepass" }
 
   before do
     ApiAuthenticationGem.reset_configuration!
@@ -16,9 +18,6 @@ RSpec.describe "RS256 Algorithm — ApiAuthenticationGem asymmetric JWT" do
       config.user_class  = "User"
     end
   end
-
-  let(:email)    { "rs256@example.com" }
-  let(:password) { "securepass" }
 
   # ---------------------------------------------------------------------------
   # signup / login issue RS256 tokens
@@ -42,16 +41,16 @@ RSpec.describe "RS256 Algorithm — ApiAuthenticationGem asymmetric JWT" do
       result       = ApiAuthenticationGem::Auth.signup(email: email, password: password)
       other_key    = OpenSSL::PKey::RSA.generate(2048).public_key
 
-      expect {
+      expect do
         JWT.decode(result[:token], other_key, true, algorithm: "RS256")
-      }.to raise_error(JWT::VerificationError)
+      end.to raise_error(JWT::VerificationError)
     end
 
     it "token cannot be decoded as HS256" do
       result = ApiAuthenticationGem::Auth.signup(email: email, password: password)
-      expect {
+      expect do
         JWT.decode(result[:token], "any-secret", true, algorithm: "HS256")
-      }.to raise_error(JWT::IncorrectAlgorithm)
+      end.to raise_error(JWT::IncorrectAlgorithm)
     end
   end
 
@@ -112,45 +111,45 @@ RSpec.describe "RS256 Algorithm — ApiAuthenticationGem asymmetric JWT" do
   # ---------------------------------------------------------------------------
   describe "Configuration validation for RS256" do
     it "raises ConfigurationError when private_key is nil" do
-      expect {
+      expect do
         ApiAuthenticationGem.reset_configuration!
         ApiAuthenticationGem.configure do |config|
           config.algorithm   = "RS256"
           config.private_key = nil
           config.public_key  = public_key
         end
-      }.to raise_error(ApiAuthenticationGem::ConfigurationError, /private_key/)
+      end.to raise_error(ApiAuthenticationGem::ConfigurationError, /private_key/)
     end
 
     it "raises ConfigurationError when public_key is nil" do
-      expect {
+      expect do
         ApiAuthenticationGem.reset_configuration!
         ApiAuthenticationGem.configure do |config|
           config.algorithm   = "RS256"
           config.private_key = private_key
           config.public_key  = nil
         end
-      }.to raise_error(ApiAuthenticationGem::ConfigurationError, /public_key/)
+      end.to raise_error(ApiAuthenticationGem::ConfigurationError, /public_key/)
     end
 
     it "raises ConfigurationError for an unknown algorithm" do
-      expect {
+      expect do
         ApiAuthenticationGem.reset_configuration!
         ApiAuthenticationGem.configure do |config|
           config.algorithm  = "ES256"
           config.secret_key = "x"
         end
-      }.to raise_error(ApiAuthenticationGem::ConfigurationError, /algorithm/)
+      end.to raise_error(ApiAuthenticationGem::ConfigurationError, /algorithm/)
     end
 
     it "allows switching from RS256 back to HS256 without error" do
-      expect {
+      expect do
         ApiAuthenticationGem.reset_configuration!
         ApiAuthenticationGem.configure do |config|
           config.algorithm  = "HS256"
           config.secret_key = "hs256-secret"
         end
-      }.not_to raise_error
+      end.not_to raise_error
     end
   end
 

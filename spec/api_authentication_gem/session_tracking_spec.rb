@@ -9,16 +9,15 @@ RSpec.describe "Session Tracking — ApiAuthenticationGem::Auth session methods"
       config.session_tracking_enabled = true
       config.revocation_enabled       = true
     end
+    ApiAuthenticationGem::Auth.signup(email: email, password: password)
   end
 
   let(:email)    { "sessions@example.com" }
   let(:password) { "securepass" }
 
-  before { ApiAuthenticationGem::Auth.signup(email: email, password: password) }
-
   def do_login(extra = {})
     ApiAuthenticationGem::Auth.login(
-      **{ email: email, password: password }.merge(extra)
+      email: email, password: password, **extra
     )
   end
 
@@ -88,7 +87,7 @@ RSpec.describe "Session Tracking — ApiAuthenticationGem::Auth session methods"
       login_r = do_login
       decoded = ApiAuthenticationGem::Auth.decode(login_r[:token])
       ApiAuthenticationGem::AuthSession.find_by(jti: decoded["jti"])
-                                        .update!(expires_at: Time.now - 1)
+        .update!(expires_at: Time.now - 1)
 
       result   = ApiAuthenticationGem::Auth.active_sessions(user_id: user.id)
       jti_list = result[:sessions].map(&:jti)
@@ -163,7 +162,7 @@ RSpec.describe "Session Tracking — ApiAuthenticationGem::Auth session methods"
       do_login
 
       result = ApiAuthenticationGem::Auth.revoke_all_sessions(user_id: user.id)
-      expect(result[:message]).to match(/session\(s\) revoked/)
+      expect(result[:message]).to include("session(s) revoked")
 
       active = ApiAuthenticationGem::AuthSession.where(user_id: user.id).active
       expect(active.count).to eq(0)

@@ -9,12 +9,11 @@ RSpec.describe "Magic Link — ApiAuthenticationGem::Auth magic link flow" do
       config.magic_link_enabled  = true
       config.magic_link_expiry   = 15 * 60
     end
+    ApiAuthenticationGem::Auth.signup(email: email, password: password)
   end
 
   let(:email)    { "magic@example.com" }
   let(:password) { "securepass" }
-
-  before { ApiAuthenticationGem::Auth.signup(email: email, password: password) }
 
   # ---------------------------------------------------------------------------
   # send_magic_link

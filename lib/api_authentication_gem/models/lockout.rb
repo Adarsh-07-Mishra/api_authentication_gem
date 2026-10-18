@@ -10,6 +10,7 @@ module ApiAuthenticationGem
 
     def minutes_remaining
       return 0 unless locked?
+
       ((locked_until - Time.now) / 60).ceil
     end
 

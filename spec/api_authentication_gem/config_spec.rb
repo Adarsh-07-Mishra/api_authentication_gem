@@ -9,15 +9,33 @@ RSpec.describe ApiAuthenticationGem::Configuration do
   describe "defaults" do
     subject(:config) { described_class.new }
 
-    it "defaults user_class to 'User'"               do expect(config.user_class).to eq("User") end
-    it "defaults email_attribute to :email"           do expect(config.email_attribute).to eq(:email) end
-    it "defaults password_attribute to :password"     do expect(config.password_attribute).to eq(:password) end
-    it "defaults identifier to :email"                do expect(config.identifier).to eq(:email) end
+    it "defaults user_class to 'User'" do
+      expect(config.user_class).to eq("User")
+    end
+
+    it "defaults email_attribute to :email" do
+      expect(config.email_attribute).to eq(:email)
+    end
+
+    it "defaults password_attribute to :password" do
+      expect(config.password_attribute).to eq(:password)
+    end
+
+    it "defaults identifier to :email" do
+      expect(config.identifier).to eq(:email)
+    end
+
     it "defaults password_verify_method to :authenticate" do
       expect(config.password_verify_method).to eq(:authenticate)
     end
-    it "defaults token_expiry to 24 hours"   do expect(config.token_expiry).to eq(24 * 60 * 60) end
-    it "defaults min_password_length to 6"   do expect(config.min_password_length).to eq(6) end
+
+    it "defaults token_expiry to 24 hours" do
+      expect(config.token_expiry).to eq(24 * 60 * 60)
+    end
+
+    it "defaults min_password_length to 6" do
+      expect(config.min_password_length).to eq(6)
+    end
   end
 
   # ---------------------------------------------------------------------------
@@ -60,7 +78,7 @@ RSpec.describe ApiAuthenticationGem::Configuration do
 
     it "raises ConfigurationError when token_expiry is zero" do
       config = described_class.new
-      config.secret_key  = "valid-key"
+      config.secret_key = "valid-key"
       config.token_expiry = 0
       expect { config.validate! }
         .to raise_error(ApiAuthenticationGem::ConfigurationError, /token_expiry/)

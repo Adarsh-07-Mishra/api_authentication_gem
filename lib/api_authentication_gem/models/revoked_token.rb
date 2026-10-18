@@ -7,6 +7,7 @@ module ApiAuthenticationGem
 
     def self.revoked?(jti)
       return false if jti.nil?
+
       where(jti: jti).exists?
     end
 

@@ -1,5 +1,5 @@
 ENV["RAILS_ENV"] ||= "test"
-require File.expand_path("../spec_helper", __FILE__)
+require File.expand_path("spec_helper", __dir__)
 
 require "active_record"
 require "bcrypt"
@@ -28,7 +28,7 @@ ActiveRecord::Schema.define do
     t.datetime :revoked_at
     t.timestamps
   end
-  add_index :api_auth_refresh_tokens, :token,   unique: true
+  add_index :api_auth_refresh_tokens, :token, unique: true
   add_index :api_auth_refresh_tokens, :user_id
 
   create_table :api_auth_revoked_tokens, force: true do |t|
@@ -45,7 +45,7 @@ ActiveRecord::Schema.define do
     t.datetime :used_at
     t.timestamps
   end
-  add_index :api_auth_password_resets, :token,      unique: true
+  add_index :api_auth_password_resets, :token, unique: true
   add_index :api_auth_password_resets, :identifier
 
   create_table :api_auth_lockouts, force: true do |t|
@@ -64,7 +64,7 @@ ActiveRecord::Schema.define do
     t.datetime :used_at
     t.timestamps
   end
-  add_index :api_auth_magic_links, :token,      unique: true
+  add_index :api_auth_magic_links, :token, unique: true
   add_index :api_auth_magic_links, :identifier
 
   create_table :api_auth_sessions, force: true do |t|
@@ -76,12 +76,12 @@ ActiveRecord::Schema.define do
     t.datetime :revoked_at
     t.timestamps
   end
-  add_index :api_auth_sessions, :jti,     unique: true
+  add_index :api_auth_sessions, :jti, unique: true
   add_index :api_auth_sessions, :user_id
 end
 
 RSpec.configure do |config|
-  config.before(:each) do
+  config.before do
     User.delete_all
     ApiAuthenticationGem::RefreshToken.delete_all
     ApiAuthenticationGem::RevokedToken.delete_all

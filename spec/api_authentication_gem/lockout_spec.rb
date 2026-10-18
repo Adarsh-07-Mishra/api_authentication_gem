@@ -8,14 +8,13 @@ RSpec.describe "Account Lockout — ApiAuthenticationGem::Auth login lockout" do
       config.user_class          = "User"
       config.lockout_enabled     = true
       config.max_login_attempts  = 3
-      config.lockout_duration    = 900  # 15 minutes in seconds
+      config.lockout_duration    = 900 # 15 minutes in seconds
     end
+    ApiAuthenticationGem::Auth.signup(email: email, password: password)
   end
 
   let(:email)    { "lockout@example.com" }
   let(:password) { "securepass" }
-
-  before { ApiAuthenticationGem::Auth.signup(email: email, password: password) }
 
   def fail_login(n = 1)
     n.times { ApiAuthenticationGem::Auth.login(email: email, password: "wrongpassword") }
@@ -98,7 +97,7 @@ RSpec.describe "Account Lockout — ApiAuthenticationGem::Auth login lockout" do
       other_email = "other@example.com"
       ApiAuthenticationGem::Auth.signup(email: other_email, password: password)
 
-      fail_login(3)  # lock the main email
+      fail_login(3) # lock the main email
 
       # Other account should still work
       result = ApiAuthenticationGem::Auth.login(email: other_email, password: password)
