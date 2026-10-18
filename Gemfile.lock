@@ -1,9 +1,11 @@
 PATH
   remote: .
   specs:
-    api_authentication_gem (0.1.4)
-      bcrypt
-      jwt
+    api_authentication_gem (0.4.0)
+      activerecord (>= 6.0)
+      activesupport (>= 6.0)
+      bcrypt (>= 3.1)
+      jwt (>= 2.0)
 
 GEM
   remote: https://rubygems.org/
@@ -43,6 +45,7 @@ GEM
       securerandom (>= 0.3)
       tzinfo (~> 2.0, >= 2.0.5)
       uri (>= 0.13.1)
+    ast (2.4.3)
     base64 (0.2.0)
     bcrypt (3.1.20)
     benchmark (0.4.0)
@@ -64,8 +67,11 @@ GEM
       pp (>= 0.6.0)
       rdoc (>= 4.0.0)
       reline (>= 0.4.2)
+    json (3.1.0)
     jwt (2.10.1)
       base64
+    language_server-protocol (3.17.0.6)
+    lint_roller (1.1.0)
     logger (1.7.0)
     loofah (2.24.0)
       crass (~> 1.0.2)
@@ -88,9 +94,14 @@ GEM
       racc (~> 1.4)
     nokogiri (1.18.7-x86_64-linux-musl)
       racc (~> 1.4)
+    parallel (2.3.0)
+    parser (3.3.12.0)
+      ast (~> 2.4.1)
+      racc
     pp (0.6.2)
       prettyprint
     prettyprint (0.2.0)
+    prism (1.9.0)
     pry (0.15.2)
       coderay (~> 1.1)
       method_source (~> 1.0)
@@ -121,9 +132,11 @@ GEM
       rake (>= 12.2)
       thor (~> 1.0, >= 1.2.2)
       zeitwerk (~> 2.6)
+    rainbow (3.1.1)
     rake (13.2.1)
     rdoc (6.13.1)
       psych (>= 4.0.0)
+    regexp_parser (2.13.1)
     reline (0.6.1)
       io-console (~> 0.5)
     rspec (3.13.0)
@@ -147,6 +160,31 @@ GEM
       rspec-mocks (~> 3.13)
       rspec-support (~> 3.13)
     rspec-support (3.13.2)
+    rspec_junit_formatter (0.6.0)
+      rspec-core (>= 2, < 4, != 2.12.0)
+    rubocop (1.92.0)
+      json (>= 2.3)
+      language_server-protocol (~> 3.17.0.2)
+      lint_roller (~> 1.1.0)
+      parallel (>= 1.10)
+      parser (>= 3.3.0.2)
+      rainbow (>= 2.2.2, < 4.0)
+      regexp_parser (>= 2.11.3, < 3.0)
+      rubocop-ast (>= 1.49.0, < 2.0)
+      ruby-progressbar (~> 1.7)
+      unicode-display_width (>= 2.4.0, < 4.0)
+    rubocop-ast (1.50.0)
+      parser (>= 3.3.7.2)
+      prism (~> 1.7)
+    rubocop-performance (1.27.0)
+      lint_roller (~> 1.1)
+      rubocop (>= 1.89.0, < 2.0)
+      rubocop-ast (>= 1.47.1, < 2.0)
+    rubocop-rspec (3.10.2)
+      lint_roller (~> 1.1)
+      regexp_parser (>= 2.0)
+      rubocop (~> 1.86, >= 1.86.2)
+    ruby-progressbar (1.13.0)
     securerandom (0.4.1)
     sqlite3 (2.6.0-aarch64-linux-gnu)
     sqlite3 (2.6.0-aarch64-linux-musl)
@@ -161,6 +199,9 @@ GEM
     timeout (0.4.3)
     tzinfo (2.0.6)
       concurrent-ruby (~> 1.0)
+    unicode-display_width (3.3.0)
+      unicode-emoji (~> 4.3)
+    unicode-emoji (4.3.0)
     uri (1.0.3)
     useragent (0.16.11)
     zeitwerk (2.7.2)
@@ -184,6 +225,10 @@ DEPENDENCIES
   pry
   rspec
   rspec-rails
+  rspec_junit_formatter
+  rubocop (~> 1.65)
+  rubocop-performance (~> 1.21)
+  rubocop-rspec (~> 3.0)
   sqlite3
 
 BUNDLED WITH

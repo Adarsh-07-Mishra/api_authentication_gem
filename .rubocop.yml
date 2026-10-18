@@ -1,0 +1,114 @@
+plugins:
+  - rubocop-rspec
+  - rubocop-performance
+
+AllCops:
+  TargetRubyVersion: 3.0
+  NewCops: enable
+  Exclude:
+    - "vendor/**/*"
+    - "tmp/**/*"
+    - "*.gemspec"
+
+# ---- Layout ----------------------------------------------------------------
+
+Layout/LineLength:
+  Max: 120
+  AllowedPatterns:
+    - '^\s*#'
+    - '^\s*validates'
+    - '^\s*add_index'
+
+Layout/MultilineMethodCallIndentation:
+  EnforcedStyle: indented
+
+Layout/HashAlignment:
+  EnforcedHashRocketStyle: table
+  EnforcedColonStyle: table
+
+# ---- Style -----------------------------------------------------------------
+
+Style/StringLiterals:
+  EnforcedStyle: double_quotes
+
+Style/FrozenStringLiteralComment:
+  Enabled: false
+
+Style/Documentation:
+  Enabled: false
+
+Style/GuardClause:
+  Enabled: false
+
+Style/ClassAndModuleChildren:
+  Enabled: false
+
+Style/NumericLiterals:
+  Enabled: false
+
+# Rails controller conventions use bang methods that are not predicates
+Naming/PredicateMethod:
+  Enabled: false
+
+# Test helpers named get_*/set_* are fine in specs
+Naming/AccessorMethodName:
+  Exclude:
+    - "spec/**/*"
+
+# Single-letter params are fine in short test helpers
+Naming/MethodParameterName:
+  MinNameLength: 1
+
+# Extension suggestion noise
+AllCops:
+  SuggestExtensions: false
+
+# ---- Metrics ---------------------------------------------------------------
+
+Metrics/MethodLength:
+  Max: 40
+
+Metrics/ClassLength:
+  Max: 300
+
+Metrics/BlockLength:
+  Max: 50
+  Exclude:
+    - "spec/**/*"
+
+Metrics/AbcSize:
+  Max: 55
+
+Metrics/CyclomaticComplexity:
+  Max: 20
+
+Metrics/PerceivedComplexity:
+  Max: 20
+
+# ---- RSpec -----------------------------------------------------------------
+
+RSpec/ExampleLength:
+  Max: 20
+
+RSpec/MultipleExpectations:
+  Max: 5
+
+RSpec/NestedGroups:
+  Max: 4
+
+RSpec/DescribeClass:
+  Enabled: false
+
+RSpec/SpecFilePathFormat:
+  Enabled: false
+
+RSpec/SpecFilePathSuffix:
+  Enabled: false
+
+# ---- Performance -----------------------------------------------------------
+
+Performance/StringReplacement:
+  Enabled: true
+
+Performance/RegexpMatch:
+  Enabled: true
