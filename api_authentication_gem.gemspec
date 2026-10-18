@@ -12,7 +12,7 @@ Gem::Specification.new do |s|
   s.files       = Dir["lib/**/*", "README.md", "LICENSE.txt"]
   s.homepage    = "https://github.com/Adarsh-07-Mishra/api_authentication_gem"
   s.license     = "MIT"
-  s.required_ruby_version = ">= 2.7.0"
+  s.required_ruby_version = ">= 3.1.0"
 
   s.add_dependency "activerecord", ">= 6.0"
   s.add_dependency "activesupport", ">= 6.0"
