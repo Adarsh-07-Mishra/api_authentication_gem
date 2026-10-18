@@ -1,30 +1,24 @@
-# ApiAuthenticationGem
+# api_authentication_gem
 
-A production-ready Ruby gem that adds **JWT-based authentication** to any Rails API — signup, login, refresh tokens, token revocation, password reset, account lockout, magic links, RBAC, session tracking, event hooks, and RS256 support — zero boilerplate required.
+A Ruby gem that handles JWT authentication for Rails APIs. It covers the usual stuff — signup, login, refresh tokens, password reset, lockout — plus some extras like magic links, RBAC, session tracking, hooks, and RS256.
 
 [![Gem Version](https://badge.fury.io/rb/api_authentication_gem.svg)](https://rubygems.org/gems/api_authentication_gem)
 
 ---
 
-## Features
+## What's included
 
-| Feature | Status |
-|---|---|
-| Signup with email + password validation | ✅ |
-| Login with JWT access token (HS256 / RS256) | ✅ |
-| JWT with `exp`, `iat`, `jti` claims | ✅ |
-| Refresh tokens (30-day, rotated on use) | ✅ |
-| Token revocation / immediate logout | ✅ |
-| Password reset flow | ✅ |
-| Account lockout after N failed attempts | ✅ |
-| `Authenticatable` concern for controllers | ✅ |
-| Role-based access control (RBAC) | ✅ |
-| Passwordless login via magic links | ✅ |
-| Active session tracking per device | ✅ |
-| Auth event hooks (signup, login, logout, …) | ✅ |
-| RS256 asymmetric JWT signing | ✅ |
-| Fully configurable user model + field names | ✅ |
-| RSpec test suite — 186 examples, 0 failures | ✅ |
+- Signup and login with JWT
+- Refresh tokens (rotated on every use)
+- Token revocation
+- Password reset
+- Account lockout after failed attempts
+- `authenticate_user!` controller concern
+- Role-based access control
+- Passwordless magic link login
+- Per-device session tracking
+- Hooks for auth events (signup, login, logout, etc.)
+- RS256 support (asymmetric keys)
 
 ---
 
@@ -41,16 +35,13 @@ bundle install
 
 ---
 
-## Database Migration
+## Database migration
 
-Copy this migration into your Rails app and run `rails db:migrate`. Add only the tables you need — each feature checks whether its table exists.
+Run this migration once. You only need the tables for the features you actually use.
 
 ```ruby
-# db/migrate/YYYYMMDD_create_api_auth_tables.rb
 class CreateApiAuthTables < ActiveRecord::Migration[7.0]
   def change
-    # ---- Core Tier 1 tables ----------------------------------------
-
     create_table :api_auth_refresh_tokens do |t|
       t.integer  :user_id,    null: false
       t.string   :token,      null: false
@@ -86,9 +77,7 @@ class CreateApiAuthTables < ActiveRecord::Migration[7.0]
     end
     add_index :api_auth_lockouts, :identifier, unique: true
 
-    # ---- Tier 2 tables (enable features as needed) -----------------
-
-    # Magic links (config.magic_link_enabled = true)
+    # only needed if you use magic links
     create_table :api_auth_magic_links do |t|
       t.string   :identifier, null: false
       t.string   :token,      null: false
@@ -99,7 +88,7 @@ class CreateApiAuthTables < ActiveRecord::Migration[7.0]
     add_index :api_auth_magic_links, :token,      unique: true
     add_index :api_auth_magic_links, :identifier
 
-    # Session tracking (config.session_tracking_enabled = true)
+    # only needed if you use session tracking
     create_table :api_auth_sessions do |t|
       t.integer  :user_id,    null: false
       t.string   :jti,        null: false
@@ -115,71 +104,47 @@ class CreateApiAuthTables < ActiveRecord::Migration[7.0]
 end
 ```
 
+```bash
+rails db:migrate
+```
+
 ---
 
 ## Setup
 
-### 1. Create an initializer
+### 1. Initializer
 
 ```ruby
-# config/initializers/api_authentication_gem.rb
+# config/initializers/api_auth.rb
 
 ApiAuthenticationGem.configure do |config|
-  # ---- Required -------------------------------------------------------
-  config.secret_key = ENV["API_AUTH_SECRET_KEY"]   # never hardcode in production
+  config.secret_key = ENV["API_AUTH_SECRET_KEY"]
 
-  # ---- Core (optional, defaults shown) --------------------------------
   config.user_class             = "User"
-  config.email_attribute        = :email
-  config.password_attribute     = :password
-  config.identifier             = :email
-  config.password_verify_method = :authenticate    # bcrypt via has_secure_password
-  config.token_expiry           = 15 * 60          # access token: 15 minutes
+  config.token_expiry           = 15 * 60       # 15 min
   config.min_password_length    = 8
 
-  # ---- Refresh tokens -------------------------------------------------
   config.refresh_tokens_enabled = true
   config.refresh_token_expiry   = 30 * 24 * 60 * 60  # 30 days
 
-  # ---- Token revocation -----------------------------------------------
   config.revocation_enabled     = true
 
-  # ---- Password reset -------------------------------------------------
-  config.password_reset_expiry  = 15 * 60          # reset token: 15 minutes
-
-  # ---- Account lockout ------------------------------------------------
   config.lockout_enabled        = true
   config.max_login_attempts     = 5
-  config.lockout_duration       = 15 * 60          # lock for 15 minutes
+  config.lockout_duration       = 15 * 60
 
-  # ---- Role-based access control (Tier 2) -----------------------------
-  # Column on your User model that holds the role string/symbol
-  config.role_attribute         = :role            # default
-
-  # ---- Magic links / passwordless login (Tier 2) ----------------------
-  config.magic_link_enabled     = false
-  config.magic_link_expiry      = 15 * 60          # 15 minutes
-
-  # ---- Active session tracking (Tier 2) -------------------------------
+  # optional features
+  config.magic_link_enabled       = false
   config.session_tracking_enabled = false
 
-  # ---- Auth event hooks (Tier 2) --------------------------------------
-  config.on_signup        = ->(user)  { Rails.logger.info "New signup: #{user.email}" }
-  config.on_login         = ->(user)  { Rails.logger.info "Login: #{user.email}" }
-  config.on_login_failure = ->(email) { Rails.logger.warn "Failed login: #{email}" }
-  config.on_logout        = ->(jti)   { Rails.logger.info "Logout jti=#{jti}" }
-  config.on_password_reset = ->(user) { Rails.logger.info "Password reset: #{user.email}" }
-
-  # ---- RS256 asymmetric JWT (Tier 2, alternative to HS256) ------------
-  # config.algorithm   = "RS256"
-  # config.private_key = OpenSSL::PKey::RSA.new(File.read(ENV["RSA_PRIVATE_KEY_PATH"]))
-  # config.public_key  = OpenSSL::PKey::RSA.new(File.read(ENV["RSA_PUBLIC_KEY_PATH"]))
+  # hooks — all optional
+  config.on_signup         = ->(user)  { puts "signed up: #{user.email}" }
+  config.on_login          = ->(user)  { puts "logged in: #{user.email}" }
+  config.on_login_failure  = ->(email) { puts "failed login: #{email}" }
+  config.on_logout         = ->(jti)   { puts "logged out: #{jti}" }
+  config.on_password_reset = ->(user)  { puts "password reset: #{user.email}" }
 end
 ```
-
-> `configure` calls `validate!` automatically and raises `ConfigurationError` at boot if any required value is missing or invalid.
-
----
 
 ### 2. User model
 
@@ -195,25 +160,16 @@ class User < ApplicationRecord
 end
 ```
 
----
-
 ### 3. Auth controller
 
 ```ruby
 class AuthController < ApplicationController
   def signup
-    result = ApiAuthenticationGem::Auth.signup(
-      email:    params[:email],
-      password: params[:password]
-    )
+    result = ApiAuthenticationGem::Auth.signup(email: params[:email], password: params[:password])
     if result[:error]
-      render json: { error: result[:error] }, status: :unprocessable_entity
+      render json: result, status: :unprocessable_entity
     else
-      render json: {
-        message:       result[:message],
-        token:         result[:token],
-        refresh_token: result[:refresh_token]
-      }, status: :created
+      render json: result, status: :created
     end
   end
 
@@ -221,43 +177,25 @@ class AuthController < ApplicationController
     result = ApiAuthenticationGem::Auth.login(
       email:      params[:email],
       password:   params[:password],
-      ip_address: request.remote_ip,       # optional — stored in session record
-      user_agent: request.user_agent       # optional — stored in session record
+      ip_address: request.remote_ip,
+      user_agent: request.user_agent
     )
-    if result[:error]
-      render json: { error: result[:error] }, status: :unauthorized
-    else
-      render json: { token: result[:token], refresh_token: result[:refresh_token] }
-    end
+    result[:error] ? render(json: result, status: :unauthorized) : render(json: result)
   end
 
   def refresh
-    result = ApiAuthenticationGem::Auth.refresh(
-      refresh_token: params[:refresh_token]
-    )
-    if result[:error]
-      render json: { error: result[:error] }, status: :unauthorized
-    else
-      render json: { token: result[:token], refresh_token: result[:refresh_token] }
-    end
+    result = ApiAuthenticationGem::Auth.refresh(refresh_token: params[:refresh_token])
+    result[:error] ? render(json: result, status: :unauthorized) : render(json: result)
   end
 
   def logout
-    result = ApiAuthenticationGem::Auth.revoke(
-      token: request.headers["Authorization"]&.split(" ")&.last
-    )
-    if result[:error]
-      render json: { error: result[:error] }, status: :unprocessable_entity
-    else
-      render json: { message: result[:message] }
-    end
+    token = request.headers["Authorization"]&.split(" ")&.last
+    render json: ApiAuthenticationGem::Auth.revoke(token: token)
   end
 
   def forgot_password
-    result = ApiAuthenticationGem::Auth.request_password_reset(
-      email: params[:email]
-    )
-    # Deliver result[:reset_token] via email — never expose it in the API response
+    result = ApiAuthenticationGem::Auth.request_password_reset(email: params[:email])
+    # send result[:reset_token] by email — don't expose it in the response
     render json: { message: result[:message] }
   end
 
@@ -266,49 +204,35 @@ class AuthController < ApplicationController
       reset_token:  params[:token],
       new_password: params[:password]
     )
-    if result[:error]
-      render json: { error: result[:error] }, status: :unprocessable_entity
-    else
-      render json: { message: result[:message] }
-    end
+    result[:error] ? render(json: result, status: :unprocessable_entity) : render(json: result)
   end
 
-  # ---- Magic link endpoints (enable config.magic_link_enabled = true) ----
-
+  # magic links
   def send_magic_link
     result = ApiAuthenticationGem::Auth.send_magic_link(email: params[:email])
-    # Deliver result[:magic_token] via email — never expose it in the API response
+    # send result[:magic_token] by email — don't expose it in the response
     render json: { message: result[:message] }
   end
 
   def verify_magic_link
     result = ApiAuthenticationGem::Auth.verify_magic_link(token: params[:token])
-    if result[:error]
-      render json: { error: result[:error] }, status: :unauthorized
-    else
-      render json: { token: result[:token], refresh_token: result[:refresh_token] }
-    end
+    result[:error] ? render(json: result, status: :unauthorized) : render(json: result)
   end
 
-  # ---- Session tracking endpoints (enable config.session_tracking_enabled = true) ----
-
-  def active_sessions
-    result = ApiAuthenticationGem::Auth.active_sessions(user_id: current_user.id)
-    render json: result
+  # session tracking
+  def sessions
+    authenticate_user!
+    render json: ApiAuthenticationGem::Auth.active_sessions(user_id: @current_user.id)
   end
 
   def revoke_session
-    result = ApiAuthenticationGem::Auth.revoke_session(jti: params[:jti])
-    if result[:error]
-      render json: { error: result[:error] }, status: :unprocessable_entity
-    else
-      render json: { message: result[:message] }
-    end
+    authenticate_user!
+    render json: ApiAuthenticationGem::Auth.revoke_session(jti: params[:jti])
   end
 
   def revoke_all_sessions
-    result = ApiAuthenticationGem::Auth.revoke_all_sessions(user_id: current_user.id)
-    render json: { message: result[:message] }
+    authenticate_user!
+    render json: ApiAuthenticationGem::Auth.revoke_all_sessions(user_id: @current_user.id)
   end
 end
 ```
@@ -323,13 +247,9 @@ Rails.application.routes.draw do
   delete "logout",             to: "auth#logout"
   post   "forgot_password",    to: "auth#forgot_password"
   post   "reset_password",     to: "auth#reset_password"
-
-  # Magic link (Tier 2)
   post   "magic_link",         to: "auth#send_magic_link"
   post   "magic_link/verify",  to: "auth#verify_magic_link"
-
-  # Session management (Tier 2)
-  get    "sessions",           to: "auth#active_sessions"
+  get    "sessions",           to: "auth#sessions"
   delete "sessions/:jti",      to: "auth#revoke_session"
   delete "sessions",           to: "auth#revoke_all_sessions"
 end
@@ -338,6 +258,8 @@ end
 ---
 
 ## Protecting routes
+
+Include the concern and call `authenticate_user!`:
 
 ```ruby
 class ApplicationController < ActionController::API
@@ -353,13 +275,11 @@ class PostsController < ApplicationController
 end
 ```
 
-`authenticate_user!` reads the `Authorization` header (`Bearer <token>`), decodes the JWT, checks the revocation blocklist, sets `@current_user`, and renders HTTP 401 automatically on any failure.
-
 ---
 
-## Role-Based Access Control (RBAC)
+## RBAC
 
-Add a `role` column to your users table (or configure `config.role_attribute` to point to an existing column). Then call `authorize_role!` inside any controller action:
+Add a `role` column to users, then use `authorize_role!` inside any action:
 
 ```ruby
 class AdminController < ApplicationController
@@ -367,21 +287,12 @@ class AdminController < ApplicationController
   before_action -> { authorize_role!("admin") }
 
   def dashboard
-    render json: { data: "admin only" }
-  end
-end
-
-class ContentController < ApplicationController
-  before_action :authenticate_user!
-
-  def publish
-    authorize_role!("admin", "editor")
-    # only admins and editors reach here
+    render json: { message: "welcome #{current_user.email}" }
   end
 end
 ```
 
-On failure `authorize_role!` renders HTTP 403:
+Returns HTTP 403 if the role doesn't match:
 
 ```json
 { "error": "Forbidden", "required": ["admin"], "current": "viewer" }
@@ -389,97 +300,45 @@ On failure `authorize_role!` renders HTTP 403:
 
 ---
 
-## Magic Links (Passwordless Login)
-
-Enable the feature and add the `api_auth_magic_links` table, then use the two-step flow:
-
-**Step 1 — request a link (send this token by email)**
+## Magic links
 
 ```ruby
+# step 1 — request a link
 result = ApiAuthenticationGem::Auth.send_magic_link(email: "user@example.com")
-# => { message: "If that email is registered, a magic link has been sent.",
-#      magic_token: "abc123..." }   # deliver this via email, never expose in response
-```
+# deliver result[:magic_token] by email
 
-**Step 2 — verify the link (user clicks the link)**
-
-```ruby
+# step 2 — user clicks the link
 result = ApiAuthenticationGem::Auth.verify_magic_link(token: params[:token])
-# => { token: "<jwt>", refresh_token: "...", user: <User> }
+# => { token: "...", user: ..., refresh_token: "..." }
 ```
 
-- Tokens are single-use — replayed tokens return an error.
-- Each new `send_magic_link` call invalidates any previous unused token for that email.
-- Both known and unknown email addresses return the same message to prevent enumeration.
+Tokens are single-use. Requesting a new one invalidates the previous one.
 
 ---
 
-## Session Tracking
-
-Enable the feature and add the `api_auth_sessions` table. Every `signup` and `login` call will then create an `AuthSession` record.
+## Session tracking
 
 ```ruby
-# Log in with device metadata
-result = ApiAuthenticationGem::Auth.login(
-  email:      "user@example.com",
-  password:   "secret",
-  ip_address: request.remote_ip,
-  user_agent: request.user_agent
-)
+# list active sessions
+ApiAuthenticationGem::Auth.active_sessions(user_id: user.id)
 
-# List active sessions for a user
-result = ApiAuthenticationGem::Auth.active_sessions(user_id: user.id)
-# => { sessions: [<AuthSession>, ...] }
+# revoke one session (sign out a specific device)
+ApiAuthenticationGem::Auth.revoke_session(jti: "some-jti")
 
-# Revoke a specific session (e.g. "sign out this device")
-result = ApiAuthenticationGem::Auth.revoke_session(jti: "some-jti-uuid")
-# => { message: "Session revoked successfully" }
-
-# Sign out everywhere
-result = ApiAuthenticationGem::Auth.revoke_all_sessions(user_id: user.id)
-# => { message: "3 session(s) revoked" }
+# sign out everywhere
+ApiAuthenticationGem::Auth.revoke_all_sessions(user_id: user.id)
 ```
-
-`revoke_session` and `revoke_all_sessions` also add the JTI(s) to the revocation blocklist when `revocation_enabled` is `true`, so the corresponding access tokens are invalidated immediately.
 
 ---
 
-## Auth Event Hooks
+## RS256
 
-Hooks let you react to auth events without monkey-patching — useful for audit logs, analytics, welcome emails, or Slack alerts. All hooks receive a single argument and are called synchronously. Any exception raised inside a hook is rescued and swallowed so it never breaks the auth flow.
-
-```ruby
-ApiAuthenticationGem.configure do |config|
-  config.on_signup        = ->(user)  { WelcomeMailer.send(user).deliver_later }
-  config.on_login         = ->(user)  { AuditLog.record(:login, user) }
-  config.on_login_failure = ->(email) { SlackAlert.warn("Failed login: #{email}") }
-  config.on_logout        = ->(jti)   { AuditLog.record(:logout, jti: jti) }
-  config.on_password_reset = ->(user) { AuditLog.record(:password_reset, user) }
-end
-```
-
-| Hook | Argument | Called when |
-|---|---|---|
-| `on_signup` | `User` | Signup succeeds |
-| `on_login` | `User` | Password login or magic link verify succeeds |
-| `on_login_failure` | `email` (String) | Wrong password or unknown email |
-| `on_logout` | `jti` (String) | Token revoked successfully |
-| `on_password_reset` | `User` | Password reset completes |
-
----
-
-## RS256 Asymmetric JWT
-
-Switch from the default HS256 (shared secret) to RS256 (RSA key pair). Useful when your resource servers need to verify tokens without accessing the secret key.
-
-**Generate a key pair:**
+If you want asymmetric keys instead of a shared secret:
 
 ```bash
 openssl genrsa -out private.pem 2048
 openssl rsa -in private.pem -pubout -out public.pem
 ```
-
-**Configure the gem:**
 
 ```ruby
 ApiAuthenticationGem.configure do |config|
@@ -487,148 +346,97 @@ ApiAuthenticationGem.configure do |config|
   config.private_key = OpenSSL::PKey::RSA.new(File.read("private.pem"))
   config.public_key  = OpenSSL::PKey::RSA.new(File.read("public.pem"))
   config.user_class  = "User"
-  # secret_key is not required for RS256
 end
-```
-
-**Verify a token independently (on a resource server):**
-
-```ruby
-public_key = OpenSSL::PKey::RSA.new(File.read("public.pem"))
-payload    = JWT.decode(token, public_key, true, algorithm: "RS256").first
 ```
 
 ---
 
-## API reference
+## Method reference
 
 ### `Auth.signup(email:, password:)`
-| Outcome | Keys returned |
+| Result | Keys |
 |---|---|
-| Success | `message`, `user`, `token`, `refresh_token` (if enabled) |
+| Success | `message`, `user`, `token`, `refresh_token` |
 | Blank email | `error: "Email is required"` |
-| Short password | `error: "Password must be at least N characters"` |
+| Weak password | `error: "Password must be at least N characters"` |
 | Duplicate email | `error: "Email has already been taken"` |
 
 ### `Auth.login(email:, password:, ip_address: nil, user_agent: nil)`
-| Outcome | Keys returned |
+| Result | Keys |
 |---|---|
-| Success | `token`, `user`, `refresh_token` (if enabled) |
-| Bad credentials | `error: "Invalid email or password"` |
-| Account locked | `error: "Account locked. Try again in N minute(s)."` |
+| Success | `token`, `user`, `refresh_token` |
+| Wrong credentials | `error: "Invalid email or password"` |
+| Locked | `error: "Account locked. Try again in N minute(s)."` |
 
 ### `Auth.refresh(refresh_token:)`
-| Outcome | Keys returned |
+| Result | Keys |
 |---|---|
 | Success | `token`, `refresh_token`, `user` |
 | Expired | `error: "Refresh token has expired"` |
 | Revoked | `error: "Refresh token has been revoked"` |
-| Not found | `error: "Invalid refresh token"` |
 
 ### `Auth.revoke(token:)`
-| Outcome | Keys returned |
+| Result | Keys |
 |---|---|
 | Success | `message: "Token revoked successfully"` |
-| Already expired | `error: "Cannot revoke an already-expired token"` |
 | Invalid | `error: "Invalid token"` |
 
 ### `Auth.request_password_reset(email:)`
-| Outcome | Keys returned |
-|---|---|
-| Known email | `message`, `reset_token` |
-| Unknown email | `message` (same text — no enumeration) |
+Returns `{ message:, reset_token: }` for known emails, same message for unknown ones (no enumeration).
 
 ### `Auth.reset_password(reset_token:, new_password:)`
-| Outcome | Keys returned |
+| Result | Keys |
 |---|---|
 | Success | `message: "Password has been reset successfully"` |
-| Invalid/expired/used | `error: "Invalid or expired reset token"` |
-| Short password | `error: "Password must be at least N characters"` |
+| Bad token | `error: "Invalid or expired reset token"` |
 
 ### `Auth.send_magic_link(email:)`
-| Outcome | Keys returned |
-|---|---|
-| Known email | `message`, `magic_token` |
-| Unknown email | `message` (same text — no enumeration) |
-| Blank email | `error: "Email is required"` |
-| Feature disabled | `error: "Magic link login is not enabled"` |
+Returns `{ message:, magic_token: }` for known emails, same message for unknown ones.
 
 ### `Auth.verify_magic_link(token:)`
-| Outcome | Keys returned |
+| Result | Keys |
 |---|---|
-| Success | `token`, `user`, `refresh_token` (if enabled) |
-| Invalid/expired/used | `error: "Invalid or expired magic link"` |
-| Blank token | `error: "Magic link token is required"` |
-| Feature disabled | `error: "Magic link login is not enabled"` |
+| Success | `token`, `user`, `refresh_token` |
+| Bad token | `error: "Invalid or expired magic link"` |
 
-### `Auth.active_sessions(user_id:)`
-| Outcome | Keys returned |
-|---|---|
-| Success | `sessions` (Array of `AuthSession`) |
-| Feature disabled | `error: "Session tracking is not enabled"` |
-
-### `Auth.revoke_session(jti:)`
-| Outcome | Keys returned |
-|---|---|
-| Success | `message: "Session revoked successfully"` |
-| Not found | `error: "Session not found"` |
-| Blank jti | `error: "JTI is required"` |
-| Feature disabled | `error: "Session tracking is not enabled"` |
-
-### `Auth.revoke_all_sessions(user_id:)`
-| Outcome | Keys returned |
-|---|---|
-| Success | `message: "N session(s) revoked"` |
-| Feature disabled | `error: "Session tracking is not enabled"` |
+### `Auth.active_sessions(user_id:)` / `Auth.revoke_session(jti:)` / `Auth.revoke_all_sessions(user_id:)`
+All return `{ error: }` when `session_tracking_enabled` is false.
 
 ### `Auth.decode(token)`
-Returns the JWT payload hash on success, `nil` if invalid, expired, or revoked.
+Returns the JWT payload hash, or `nil` if invalid/expired/revoked.
 
 ---
 
-## JWT payload
+## JWT claims
 
 | Claim | Value |
 |---|---|
-| `sub` | User primary key |
-| `iat` | Issued-at Unix timestamp |
-| `exp` | Expiry (`iat + token_expiry`) |
-| `jti` | Unique UUID per token |
-
-Default algorithm: **HS256** — switch to **RS256** via `config.algorithm`.
+| `sub` | User ID |
+| `iat` | Issued at |
+| `exp` | Expires at |
+| `jti` | Unique token ID |
 
 ---
 
-## Maintenance
+## Cron cleanup
 
-### Prune expired revoked tokens (run from a cron job)
 ```ruby
 ApiAuthenticationGem::RevokedToken.cleanup!
 ```
 
----
-
-## Error classes
-
-| Class | When raised |
-|---|---|
-| `ApiAuthenticationGem::ConfigurationError` | Invalid `configure` block |
-| `ApiAuthenticationGem::AuthenticationError` | Reserved for future use |
+Run this periodically to prune expired entries from the revoked tokens table.
 
 ---
 
-## Running the test suite
+## Running tests
 
 ```bash
-bundle install
-bundle exec rspec --format documentation
+bundle exec rspec
 # 186 examples, 0 failures
 ```
-
-Uses an in-memory SQLite database. No external services required.
 
 ---
 
 ## License
 
-MIT — see [LICENSE.txt](LICENSE.txt).
+MIT
