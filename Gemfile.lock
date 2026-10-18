@@ -1,9 +1,11 @@
 PATH
   remote: .
   specs:
-    api_authentication_gem (0.1.4)
-      bcrypt
-      jwt
+    api_authentication_gem (0.4.0)
+      activerecord (>= 6.0)
+      activesupport (>= 6.0)
+      bcrypt (>= 3.1)
+      jwt (>= 2.0)
 
 GEM
   remote: https://rubygems.org/

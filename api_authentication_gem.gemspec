@@ -1,17 +1,24 @@
+require_relative "lib/api_authentication_gem/version"
+
 Gem::Specification.new do |s|
-    s.name        = "api_authentication_gem"
-    s.version     = "0.1.4"
-    s.summary     = "Provides JWT-based signup and login for APIs"
-    s.description = "Reusable gem for authentication with user-defined models. For detailed usage, visit: https://github.com/Adarsh-07-Mishra/api_authentication_gem/blob/main/README.md"
-    s.authors     = ["Adarsh Mishra"]
-    s.email       = ["aadimishra24@gmail.com"]
-    s.files       = Dir["lib/**/*", "README.md"]
-    s.homepage    = "https://github.com/Adarsh-07-Mishra/api_authentication_gem"
-    s.license     = "MIT"
-  
-    s.add_dependency "bcrypt"
-    s.add_dependency "jwt"
-    s.add_development_dependency "rspec"
-    s.add_development_dependency "rspec-rails"
-  end
-  
+  s.name        = "api_authentication_gem"
+  s.version     = ApiAuthenticationGem::VERSION
+  s.summary     = "Production-ready JWT authentication for Rails APIs"
+  s.description = "Drop-in JWT signup/login for Rails API apps. Configurable user model, " \
+                  "token expiry, password validation, and a ready-made controller concern. " \
+                  "See https://github.com/Adarsh-07-Mishra/api_authentication_gem for full docs."
+  s.authors     = ["Adarsh Mishra"]
+  s.email       = ["aadimishra277@gmail.com"]
+  s.files       = Dir["lib/**/*", "README.md", "LICENSE.txt"]
+  s.homepage    = "https://github.com/Adarsh-07-Mishra/api_authentication_gem"
+  s.license     = "MIT"
+  s.required_ruby_version = ">= 2.7.0"
+
+  s.add_dependency "jwt",           ">= 2.0"
+  s.add_dependency "bcrypt",        ">= 3.1"
+  s.add_dependency "activesupport",  ">= 6.0"
+  s.add_dependency "activerecord",   ">= 6.0"
+
+  s.add_development_dependency "rspec",  ">= 3.0"
+  s.add_development_dependency "sqlite3"
+end
